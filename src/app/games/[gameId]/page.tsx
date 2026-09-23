@@ -2,9 +2,12 @@ import { notFound } from "next/navigation";
 import { Users, Clock, Layers, CircleCheck } from "lucide-react";
 import { SiteFooter, SiteNav } from "@/components/ui/site-nav";
 import { Badge, Card } from "@/components/ui/card";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { getGame, latestVersion } from "@/lib/store";
+import { ButtonLink } from "@/components/ui/button";
+import { getGame, getOrCreateCampaign, latestVersion, listFeedback } from "@/lib/store";
 import { PublishButton } from "@/app/games/[gameId]/publish-button";
+import { FeedbackUpvoteButton } from "@/app/games/[gameId]/feedback-upvote-button";
+import { FeedbackForm } from "@/app/games/[gameId]/feedback-form";
+import { CampaignCard, PlayBeforeYouBackBand } from "@/app/games/[gameId]/campaign-section";
 
 export default async function GameDetailPage({
   params,
@@ -23,6 +26,16 @@ export default async function GameDetailPage({
   const justCompiled = query.compiled === "1";
 
   const report = version.compileReport ?? null;
+  const campaign = getOrCreateCampaign(game.id);
+  const feedback = listFeedback(game.id);
+  const averageFun =
+    feedback.length > 0
+      ? feedback.reduce((sum, item) => sum + item.funScore, 0) / feedback.length
+      : null;
+  const averageClarity =
+    feedback.length > 0
+      ? feedback.reduce((sum, item) => sum + item.clarityScore, 0) / feedback.length
+      : null;
 
   return (
     <>
@@ -163,7 +176,7 @@ export default async function GameDetailPage({
           </div>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
+        <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
           <div className="flex flex-col gap-8">
             <section>
               <h2 className="text-xl font-semibold text-ink">How to play</h2>
@@ -232,19 +245,82 @@ export default async function GameDetailPage({
                 ))}
               </ul>
             </section>
+
+            <section>
+              <h2 className="text-xl font-semibold text-ink">Playtest feedback</h2>
+              <p className="mt-1 text-sm text-ink-muted">
+                What players think after trying this prototype.
+              </p>
+              {averageFun !== null && averageClarity !== null ? (
+                <p className="mt-2 text-sm font-medium text-ink">
+                  {averageFun.toFixed(1)} fun · {averageClarity.toFixed(1)} clarity
+                  <span className="ml-1 font-normal text-ink-muted">
+                    from {feedback.length} playtest{feedback.length === 1 ? "" : "s"}
+                  </span>
+                </p>
+              ) : null}
+
+              {feedback.length === 0 ? (
+                <Card className="mt-3 p-5">
+                  <p className="text-sm text-ink-muted">
+                    No playtest feedback yet. Be the first to play and share your thoughts.
+                  </p>
+                </Card>
+              ) : (
+                <ul className="mt-3 space-y-3">
+                  {feedback.map((item) => (
+                    <li key={item.id}>
+                      <Card className="p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-ink">{item.author}</p>
+                            <p className="text-xs text-ink-muted">
+                              {new Date(item.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge tone="primary">{item.funScore}/5 fun</Badge>
+                            <Badge tone="accent">{item.clarityScore}/5 clarity</Badge>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                          {item.comment}
+                        </p>
+                        <div className="mt-3">
+                          <FeedbackUpvoteButton
+                            id={item.id}
+                            gameId={game.id}
+                            upvotes={item.upvotes}
+                          />
+                        </div>
+                        {item.creatorResponse ? (
+                          <div className="mt-3 border-l-2 border-primary/30 pl-3">
+                            <p className="text-xs font-medium text-primary">
+                              Response from the designer
+                            </p>
+                            <p className="mt-1 text-sm text-ink-muted">
+                              {item.creatorResponse}
+                            </p>
+                          </div>
+                        ) : null}
+                      </Card>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <Card className="mt-4 p-5">
+                <h3 className="text-sm font-semibold text-ink">Share your feedback</h3>
+                <div className="mt-3">
+                  <FeedbackForm gameId={game.id} />
+                </div>
+              </Card>
+            </section>
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <Card className="p-5">
-              <h2 className="text-sm font-semibold text-ink">Play before you back</h2>
-              <p className="mt-2 text-sm text-ink-muted">
-                When this game runs a crowdfunding campaign, backers will be able to play this
-                exact version before pledging. That way you know what you&apos;re backing.
-              </p>
-              <Button variant="secondary" size="sm" disabled className="mt-4 w-full">
-                Campaign coming in a later phase
-              </Button>
-            </Card>
+          <aside className="flex flex-col gap-6 lg:sticky lg:top-24 lg:max-w-[360px] lg:self-start">
+            <PlayBeforeYouBackBand gameId={game.id} />
+            <CampaignCard gameId={game.id} gameTitle={game.title} campaign={campaign} />
           </aside>
         </div>
       </main>

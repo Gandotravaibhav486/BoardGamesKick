@@ -5,7 +5,7 @@ Last updated:
 
 ## Overall Status
 
-STATUS: PHASE 1 COMPLETE (AI → playable game). Phase 2 NOT STARTED.
+STATUS: PHASE 2 COMPLETE (publish → community → play before you back → mock back). Phase 3+ NOT STARTED.
 
 Legend: **REAL** = implemented and verified · **MOCKED** = present but simulated, clearly labeled in-product · **NOT IMPLEMENTED** = absent
 
@@ -60,34 +60,51 @@ The generic condition/effect vocabulary in GAME_SPEC.md is retained as the long-
 
 ---
 
-# Phase 2 — AI Game Builder
+# Phase 2 — Publish → Community → Play Before You Back
 
-Status: PARTIALLY COVERED BY PHASE 1
+Status: COMPLETE (desktop demo target; commit follows `21ac498`)
 
-- [x] Create Game flow, natural-language input, rules compiler (REAL), spec validation, unsupported-rule detection, ambiguity detection (reported, not interactively resolved), coverage report, Create → Compile → Play
-- [ ] Clarification flow (answer questions → recompile) — NOT IMPLEMENTED
-- [ ] 10-case compiler evaluation — NOT DONE
-- [ ] Multiple archetypes — NOT IMPLEMENTED
+### Completed — REAL (in-memory persistence)
+
+- [x] **Publish flow** — draft → published via server action; published games appear in `/community` immediately (existing Phase 0 flow, verified end to end with an AI-generated game)
+- [x] **Community / discovery** (`src/app/community/page.tsx`, `src/components/marketing/game-card.tsx`, `game-preview.tsx`) — curated Featured layout for Tidepool, card grid with data-driven abstract preview art built only from each game's Presentation Spec colors (no images, no fake screenshots), designer, players, play time, pitch, Play / Details, `?q=` search, honest empty states, drafts section
+- [x] **Game detail page** — hero, how-to-play, rule-spec summary, versions, playtest feedback, Play-Before-You-Back band, campaign section
+- [x] **Play before you back** (`src/app/games/[gameId]/campaign-section.tsx`) — PLAY → UNDERSTAND → BACK visual, primary "Play the game" CTA → `/play/[id]?from=campaign`; every tabletop exit ("Back to game page", "Exit", game-over button) returns to `/games/[id]#campaign` so the backing decision is presented right after playing
+- [x] **Playtest feedback** (`feedback-form.tsx`, `feedback-upvote-button.tsx`, `feedback-actions.ts`) — fun/clarity scores 1–5, comment, author; list with averages, upvotes (server action, optimistic), designer-response block; real empty state for games with no feedback. REAL mechanics; Tidepool ships with 4 seeded demo reviews (clearly fictional content on the showcase game only)
+
+### Completed — MOCKED (clearly labeled in-product)
+
+- [x] **Crowdfunding** (`src/lib/store.ts` `Campaign`/`RewardTier`/`Backer`, `campaign-actions.ts`) — goal, raised, progress bar, deadline countdown, backer count, story, 4 reward tiers (two limited with sold-out handling), "Back this game" → tier selection → "Confirm backing (simulated)" → success state; raised/backer counts update. Every campaign shows "Simulated crowdfunding demo — no real payments" and the story text says so. Backers and tier claims are deterministic mock data seeded per game; Tidepool: $6,000 goal, ~73% funded, ~285 mock backers. No payment provider, no `PaymentProvider` abstraction yet.
+- [x] Community funding badge ("73% funded") derived from the same mock campaign data
+
+### Verification
+
+- [x] `pnpm typecheck` 0 errors · `pnpm lint` clean · `pnpm test` 42 passed / 1 skipped · `pnpm build` passes
+- [x] Full demo flow in a real browser (`node scripts/e2e-full-demo.mjs`, 1440×900, 11/11 steps, zero console errors): LANDING → CREATE → GENERATE (real AI, 21s) → PLAY generated game (select → confirm) → tabletop exit lands on `#campaign` → PUBLISH → COMMUNITY lists it + Tidepool featured → TIDEPOOL page shows campaign → "Play the game" → `/play/tidepool?from=campaign` → return to `#campaign` → MOCK BACK (285 → 286 backers) → simulated label present
+- [ ] Mobile — NOT VERIFIED (desktop demo)
+- [ ] Accessibility audit — NOT DONE
+
+### Known limitations
+
+- All persistence is in-memory: published games, feedback, and mock pledges reset on server restart (Tidepool + its seeded campaign/feedback are re-seeded).
+- Mock campaign numbers are generated, not entered by the designer; there is no campaign creation/editing UI.
+- Feedback has no auth; author is free text. Upvote is once per browser session only.
+- Seeded reward-tier `claimed` counts for the base backers are independent of the backer list (demo cosmetics).
+- No re-versioning: playtest feedback does not yet feed a "new version" flow (CREATE → PLAY → FEEDBACK → IMPROVE is demonstrated, the IMPROVE step is manual).
 
 ---
 
 # Phase 3 — Playable Tabletop
 
-Status: DESKTOP COMPLETE FOR THE ARCHETYPE
-
-- [x] Generic renderer, presentation spec, tiles/tokens, player areas, table, action bar, turn indicator, game log, legal-move highlighting (engine-driven), scores, game end
-- [ ] Cards / hands / decks / resources rendering — types exist, NOT rendered (not needed by the archetype)
-- [ ] Mobile QA, accessibility audit, visual regression, performance benchmark — NOT DONE
-
----
+Status: DESKTOP COMPLETE FOR THE ARCHETYPE (see Phase 1); mobile QA, accessibility, visual regression NOT DONE
 
 # Phase 4 — Community + Playtesting
 
-Status: NOT STARTED (publish/discover/search/detail exist from Phase 0; no feedback, dashboard, or re-versioning)
+Status: COVERED BY PHASE 2 except designer dashboard and version-from-feedback — NOT IMPLEMENTED
 
 # Phase 5 — Crowdfunding
 
-Status: NOT STARTED (detail page shows a disabled "Campaign coming in a later phase" affordance; no campaign entities or payment abstraction)
+Status: MOCKED (see Phase 2). Campaign creation UI, `PaymentProvider` abstraction, stretch goals, updates, FAQ — NOT IMPLEMENTED
 
 # Phase 6 — Final QA
 
@@ -99,7 +116,7 @@ Status: NOT STARTED
 
 LANDING → CREATE → COMPILE → PLAY → PUBLISH → COMMUNITY → DISCOVER → PLAY → FEEDBACK → DASHBOARD → CROWDFUND → PLAY BEFORE BACKING
 
-Current reach (all REAL except where noted): LANDING → CREATE → COMPILE (real AI) → PLAY (real engine, client-side) → PUBLISH → COMMUNITY → DISCOVER → PLAY. FEEDBACK, DASHBOARD, CROWDFUND, PLAY-BEFORE-BACKING as a campaign flow: NOT IMPLEMENTED.
+Current reach: LANDING → CREATE → COMPILE (real AI) → PLAY (real engine, client-side) → PUBLISH → COMMUNITY → DISCOVER → PLAY → FEEDBACK (real, in-memory) → CROWDFUND (MOCKED, labeled) → PLAY BEFORE BACKING (real flow, mock pledge). DASHBOARD: NOT IMPLEMENTED.
 
 Final status:
 

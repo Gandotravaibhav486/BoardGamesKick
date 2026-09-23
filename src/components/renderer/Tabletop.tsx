@@ -234,10 +234,10 @@ export function Tabletop({ spec, presentation, gameTitle, gameId }: TabletopProp
       </div>
       <TurnIndicator players={state.players} activePlayerId={state.turn.activePlayer} youId={HUMAN_ID} round={state.turn.round} />
       <div className="flex items-center gap-1 text-xs">
-        <ButtonLink href={`/games/${gameId}`} variant="ghost" size="sm" className="hidden sm:inline-flex">
+        <ButtonLink href={`/games/${gameId}#campaign`} variant="ghost" size="sm" className="hidden sm:inline-flex">
           Back to game page
         </ButtonLink>
-        <ButtonLink href="/community" variant="ghost" size="sm">
+        <ButtonLink href={`/games/${gameId}#campaign`} variant="ghost" size="sm">
           Exit
         </ButtonLink>
       </div>
@@ -305,7 +305,7 @@ export function Tabletop({ spec, presentation, gameTitle, gameId }: TabletopProp
               <Button size="sm" onClick={handlePlayAgain}>
                 Play again
               </Button>
-              <ButtonLink href={`/games/${gameId}`} variant="secondary" size="sm">
+              <ButtonLink href={`/games/${gameId}#campaign`} variant="secondary" size="sm">
                 Back to game page
               </ButtonLink>
             </div>

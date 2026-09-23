@@ -1,43 +1,31 @@
-import { Search, Users, Clock } from "lucide-react";
+import { Search } from "lucide-react";
 import { SiteFooter, SiteNav } from "@/components/ui/site-nav";
 import { Badge, Card } from "@/components/ui/card";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { listGames, type GameRecord } from "@/lib/store";
+import { GamePreview } from "@/components/marketing/game-preview";
+import { GameCard } from "@/components/marketing/game-card";
+import * as store from "@/lib/store";
+import { latestVersion, listGames, type GameRecord } from "@/lib/store";
 
-function GameCard({ game }: { game: GameRecord }) {
-  return (
-    <Card className="flex flex-col p-5">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-ink">{game.title}</h3>
-        <Badge tone={game.status === "published" ? "success" : "warning"}>
-          {game.status === "published" ? "Published" : "Draft"}
-        </Badge>
-      </div>
-      <p className="mt-1 text-xs text-ink-muted">by {game.designer}</p>
-      <p className="mt-3 line-clamp-2 text-sm text-ink-muted">{game.pitch}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Badge>
-          <Users className="mr-1 size-3" aria-hidden />
-          {game.players.min === game.players.max
-            ? `${game.players.min}`
-            : `${game.players.min}–${game.players.max}`}
-        </Badge>
-        <Badge>
-          <Clock className="mr-1 size-3" aria-hidden />
-          {game.estimatedMinutes} min
-        </Badge>
-      </div>
-      <div className="mt-4 flex gap-2">
-        <ButtonLink href={`/play/${game.id}`} size="sm" className="flex-1">
-          Play
-        </ButtonLink>
-        <ButtonLink href={`/games/${game.id}`} variant="secondary" size="sm" className="flex-1">
-          Details
-        </ButtonLink>
-      </div>
-    </Card>
-  );
+/**
+ * A campaign getter may be added by a concurrent workstream. Read it
+ * defensively so this page keeps working whether or not it exists yet,
+ * and so we never fabricate funding numbers.
+ */
+function fundingPercentFor(gameId: string): number | undefined {
+  const getter = (store as Record<string, unknown>).getOrCreateCampaign;
+  if (typeof getter !== "function") return undefined;
+  const campaign = getter(gameId) as
+    | { raisedCents?: number; goalCents?: number }
+    | null
+    | undefined;
+  if (!campaign) return undefined;
+  const { raisedCents, goalCents } = campaign;
+  if (typeof raisedCents !== "number" || typeof goalCents !== "number" || goalCents <= 0) {
+    return undefined;
+  }
+  return Math.min(100, Math.max(0, (raisedCents / goalCents) * 100));
 }
 
 export default async function CommunityPage({
@@ -84,15 +72,54 @@ export default async function CommunityPage({
         </form>
 
         {showcase && showcaseMatches ? (
-          <section className="mt-10">
+          <section className="mt-12">
             <h2 className="text-xl font-semibold text-ink">Featured</h2>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <GameCard game={showcase} />
-            </div>
+            <Card className="mt-4 grid grid-cols-1 overflow-hidden p-0 md:grid-cols-2">
+              <GamePreview
+                presentation={latestVersion(showcase).presentation}
+                title={showcase.title}
+                size="lg"
+                className="h-56 w-full md:h-full"
+              />
+              <div className="flex flex-col justify-center p-6 sm:p-8">
+                <Badge tone="primary" className="w-fit">
+                  Curated pick
+                </Badge>
+                <h3 className="mt-3 text-2xl font-semibold text-ink">{showcase.title}</h3>
+                <p className="mt-1 text-sm text-ink-muted">by {showcase.designer}</p>
+                <p className="mt-3 text-sm text-ink-muted">{showcase.pitch}</p>
+                <p className="mt-3 text-sm text-ink-muted">
+                  Why we picked it: a tight, public-drafting core that plays fast and rewards
+                  reading the table.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Badge>
+                    {showcase.players.min === showcase.players.max
+                      ? `${showcase.players.min} players`
+                      : `${showcase.players.min}–${showcase.players.max} players`}
+                  </Badge>
+                  <Badge>{showcase.estimatedMinutes} min</Badge>
+                  {(() => {
+                    const pct = fundingPercentFor(showcase.id);
+                    return typeof pct === "number" ? (
+                      <Badge tone="accent">{Math.round(pct)}% funded</Badge>
+                    ) : null;
+                  })()}
+                </div>
+                <div className="mt-6 flex gap-2">
+                  <ButtonLink href={`/play/${showcase.id}`} className="flex-1">
+                    Play now
+                  </ButtonLink>
+                  <ButtonLink href={`/games/${showcase.id}`} variant="secondary" className="flex-1">
+                    Details
+                  </ButtonLink>
+                </div>
+              </div>
+            </Card>
           </section>
         ) : null}
 
-        <section className="mt-10">
+        <section className="mt-12">
           <h2 className="text-xl font-semibold text-ink">All games</h2>
           {filteredPublished.length === 0 ? (
             <Card className="mt-4 p-8 text-center">
@@ -121,23 +148,23 @@ export default async function CommunityPage({
               )}
             </Card>
           ) : (
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filteredPublished.map((game) => (
-                <GameCard key={game.id} game={game} />
+                <GameCard key={game.id} game={game} fundingPercent={fundingPercentFor(game.id)} />
               ))}
             </div>
           )}
         </section>
 
         {drafts.length > 0 ? (
-          <section className="mt-10">
+          <section className="mt-12">
             <h2 className="text-xl font-semibold text-ink">Your drafts</h2>
             <p className="mt-1 text-sm text-ink-muted">
               Drafts are only visible to you until you publish them.
             </p>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {drafts.filter(matches).map((game) => (
-                <GameCard key={game.id} game={game} />
+                <GameCard key={game.id} game={game} fundingPercent={fundingPercentFor(game.id)} />
               ))}
             </div>
           </section>
