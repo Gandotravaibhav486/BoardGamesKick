@@ -19,12 +19,23 @@ export type ZoneGeometry =
   | { kind: "row"; capacity?: number }
   | { kind: "grid"; rows: number; cols: number };
 
+/** Functional role the engine uses to locate zones without relying on ids */
+export type ZoneRole =
+  | "supply"
+  | "pool"
+  | "overflow"
+  | "discard"
+  | "collection-row"
+  | "mosaic"
+  | "penalty";
+
 export interface ZoneDef {
   id: ZoneId;
   name: string;
   owner: ZoneOwner;
   visibility: Visibility;
   geometry: ZoneGeometry;
+  role?: ZoneRole;
   /** Optional pattern of allowed entity types per cell, e.g. for wall placement rules */
   cellPattern?: string[][];
 }
@@ -139,6 +150,36 @@ export interface SetupStep {
   count?: number | "all";
 }
 
+// ---------------------------------------------------------------------------
+// Mechanics — which engine archetype executes this spec, plus its parameters.
+// The MVP engine implements exactly one archetype. Anything the compiler cannot
+// express as an archetype must be reported as unsupported, never approximated.
+// ---------------------------------------------------------------------------
+
+export interface TileDraftingParams {
+  /** Number of shared pools; each is refilled from the supply every round */
+  poolCount: number;
+  poolCapacity: number;
+  tilesPerType: number;
+  /** Capacity of each collection row, in order (e.g. [1,2,3,4,5]) */
+  rowCapacities: number[];
+  /** Penalty per tile in the penalty zone, by slot index; last value repeats */
+  spillPenalties: number[];
+  scoring: {
+    /** adjacency: 1 + contiguous neighbours in row and column; flat: 1 per tile */
+    placement: "adjacency" | "flat";
+    completedRowBonus: number;
+    completedColumnBonus: number;
+    /** Bonus for placing every tile of one type in the mosaic */
+    completedSetBonus: number;
+  };
+  endCondition: { type: "completed-row" } | { type: "rounds"; rounds: number };
+  /** Whether taking from the overflow zone first grants the starting marker (and a penalty tile) */
+  startingMarker: boolean;
+}
+
+export type Mechanics = { archetype: "tile-drafting"; params: TileDraftingParams };
+
 export interface GameSpec {
   specVersion: typeof GAME_SPEC_VERSION;
   id: string;
@@ -146,6 +187,7 @@ export interface GameSpec {
   summary: string;
   players: { min: number; max: number };
   estimatedMinutes: number;
+  mechanics: Mechanics;
   entityTypes: EntityTypeDef[];
   resources: ResourceDef[];
   zones: ZoneDef[];
@@ -185,11 +227,15 @@ export interface TurnState {
   activePlayer: PlayerId;
   phaseId: string;
   turnNumber: number;
+  /** Player who starts the next round (holder of the starting marker) */
+  nextStartingPlayer?: PlayerId;
 }
 
 export interface GameState {
   specId: string;
   seed: number;
+  /** Current PRNG state so that state + action sequence is fully reproducible */
+  rngState: number;
   players: PlayerState[];
   entities: Record<EntityId, EntityInstance>;
   zones: ZoneState[];
@@ -213,11 +259,13 @@ export interface ActionIntent {
 export type GameEvent =
   | { type: "GAME_STARTED"; specId: string; seed: number }
   | { type: "ROUND_STARTED"; round: number }
+  | { type: "ROUND_ENDED"; round: number }
+  | { type: "PHASE_STARTED"; phaseId: string }
   | { type: "TURN_STARTED"; playerId: PlayerId; turnNumber: number }
-  | { type: "ACTION_CONFIRMED"; actionId: string; playerId: PlayerId }
-  | { type: "ENTITY_MOVED"; entityId: EntityId; from: ZoneId; to: ZoneId; toSlot?: number }
+  | { type: "ACTION_CONFIRMED"; actionId: string; playerId: PlayerId; description: string }
+  | { type: "ENTITY_MOVED"; entityId: EntityId; entityType: string; from: ZoneId; fromOwner: PlayerId | "shared"; to: ZoneId; toOwner: PlayerId | "shared"; toSlot?: number }
   | { type: "RESOURCE_CHANGED"; playerId: PlayerId; resource: string; delta: number; total: number }
-  | { type: "SCORE_CHANGED"; playerId: PlayerId; delta: number; total: number }
+  | { type: "SCORE_CHANGED"; playerId: PlayerId; delta: number; total: number; reason: string }
   | { type: "DICE_ROLLED"; playerId: PlayerId; values: number[] }
   | { type: "CARD_DRAWN"; playerId: PlayerId; entityId: EntityId }
   | { type: "GAME_ENDED"; winnerIds: PlayerId[] };

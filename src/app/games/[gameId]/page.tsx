@@ -4,7 +4,6 @@ import { SiteFooter, SiteNav } from "@/components/ui/site-nav";
 import { Badge, Card } from "@/components/ui/card";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { getGame, latestVersion } from "@/lib/store";
-import { getCompiler } from "@/lib/compiler/mock-compiler";
 import { PublishButton } from "@/app/games/[gameId]/publish-button";
 
 export default async function GameDetailPage({
@@ -23,15 +22,7 @@ export default async function GameDetailPage({
   const spec = version.spec;
   const justCompiled = query.compiled === "1";
 
-  const report = justCompiled
-    ? await getCompiler().compile({
-        title: game.title,
-        pitch: game.pitch,
-        players: game.players,
-        estimatedMinutes: game.estimatedMinutes,
-        rulesText: game.rulesText,
-      })
-    : null;
+  const report = version.compileReport ?? null;
 
   return (
     <>
@@ -49,15 +40,49 @@ export default async function GameDetailPage({
             </p>
             <Card className="mt-4 p-4">
               <h3 className="text-sm font-semibold text-ink">Compiler report</h3>
+              {report.model ? (
+                <p className="mt-1 text-xs text-ink-muted">
+                  Compiled by {report.model}
+                  {report.durationMs !== undefined
+                    ? ` in ${(report.durationMs / 1000).toFixed(1)}s`
+                    : ""}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-ink-muted">
+                  Prototype compiler — this build did not call the AI compiler.
+                </p>
+              )}
               <div className="mt-3 space-y-4 text-sm">
                 <div>
                   <p className="font-medium text-ink">Notes</p>
                   <ul className="mt-1 list-inside list-disc space-y-1 text-ink-muted">
-                    {report.issues.map((issue, i) => (
-                      <li key={i}>{issue.message}</li>
-                    ))}
+                    {report.issues
+                      .filter((issue) => issue.severity !== "ambiguity")
+                      .map((issue, i) => (
+                        <li key={i}>{issue.message}</li>
+                      ))}
                   </ul>
                 </div>
+                {report.issues.some((issue) => issue.severity === "ambiguity") ? (
+                  <div>
+                    <p className="font-medium text-ink">Ambiguities</p>
+                    <ul className="mt-1 list-inside list-disc space-y-1 text-ink-muted">
+                      {report.issues
+                        .filter((issue) => issue.severity === "ambiguity")
+                        .map((issue, i) => (
+                          <li key={i}>
+                            {issue.message}
+                            {issue.question ? (
+                              <>
+                                {" "}
+                                <span className="italic">({issue.question})</span>
+                              </>
+                            ) : null}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                ) : null}
                 <div>
                   <p className="font-medium text-ink">Unsupported rules</p>
                   {report.unsupportedRules.length === 0 ? (

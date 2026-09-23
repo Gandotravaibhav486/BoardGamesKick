@@ -1,5 +1,6 @@
 import type { GameSpec } from "@/lib/game-spec/types";
 import type { PresentationSpec } from "@/lib/presentation/types";
+import type { CompileReport } from "@/lib/compiler/types";
 import { tidepoolPresentation, tidepoolSpec } from "@/lib/showcase/tidepool";
 
 /**
@@ -15,6 +16,8 @@ export interface GameVersion {
   notes: string;
   spec: GameSpec;
   presentation: PresentationSpec;
+  /** Compiler report for this version, if it was AI-compiled */
+  compileReport?: CompileReport;
 }
 
 export interface GameRecord {

@@ -1,3 +1,12 @@
+import type { CompilerIssue, UnsupportedRule } from "@/lib/compiler/types";
+
+export interface CreateGameCompileFailure {
+  status: "failed" | "needs-clarification";
+  unsupportedRules: UnsupportedRule[];
+  issues: CompilerIssue[];
+  coverage: { covered: string[]; uncovered: string[] };
+}
+
 export interface CreateGameState {
   errors: Partial<
     Record<"title" | "pitch" | "playersMin" | "playersMax" | "estimatedMinutes" | "rulesText" | "form", string>
@@ -10,6 +19,7 @@ export interface CreateGameState {
     estimatedMinutes: string;
     rulesText: string;
   };
+  compile?: CreateGameCompileFailure;
 }
 
 export const initialCreateGameState: CreateGameState = {

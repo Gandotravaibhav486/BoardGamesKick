@@ -11,6 +11,19 @@ function baseSpec(): GameSpecInput {
     summary: "A minimal valid spec used as a base for tests.",
     players: { min: 2, max: 4 },
     estimatedMinutes: 10,
+    mechanics: {
+      archetype: "tile-drafting",
+      params: {
+        poolCount: 1,
+        poolCapacity: 4,
+        tilesPerType: 10,
+        rowCapacities: [1, 2],
+        spillPenalties: [-1],
+        scoring: { placement: "flat", completedRowBonus: 0, completedColumnBonus: 0, completedSetBonus: 0 },
+        endCondition: { type: "rounds", rounds: 3 },
+        startingMarker: false,
+      },
+    },
     entityTypes: [{ id: "token", name: "Token", kind: "token", count: 10 }],
     resources: [],
     zones: [

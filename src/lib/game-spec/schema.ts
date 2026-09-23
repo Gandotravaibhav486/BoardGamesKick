@@ -43,6 +43,9 @@ export const zoneDefSchema = z.object({
   visibility: visibilitySchema,
   geometry: zoneGeometrySchema,
   cellPattern: z.array(z.array(z.string())).optional(),
+  role: z
+    .enum(["supply", "pool", "overflow", "discard", "collection-row", "mosaic", "penalty"])
+    .optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -283,6 +286,30 @@ export const setupStepSchema = z.discriminatedUnion("type", [
 // GameSpec
 // ---------------------------------------------------------------------------
 
+export const tileDraftingParamsSchema = z.object({
+  poolCount: z.number().int().min(1),
+  poolCapacity: z.number().int().min(1),
+  tilesPerType: z.number().int().min(1),
+  rowCapacities: z.array(z.number().int().min(1)).min(1),
+  spillPenalties: z.array(z.number()).min(1),
+  scoring: z.object({
+    placement: z.enum(["adjacency", "flat"]),
+    completedRowBonus: z.number(),
+    completedColumnBonus: z.number(),
+    completedSetBonus: z.number(),
+  }),
+  endCondition: z.discriminatedUnion("type", [
+    z.object({ type: z.literal("completed-row") }),
+    z.object({ type: z.literal("rounds"), rounds: z.number().int().min(1) }),
+  ]),
+  startingMarker: z.boolean(),
+});
+
+export const mechanicsSchema = z.object({
+  archetype: z.literal("tile-drafting"),
+  params: tileDraftingParamsSchema,
+});
+
 export const gameSpecSchema = z.object({
   specVersion: z.literal(GAME_SPEC_VERSION),
   id: z.string(),
@@ -290,6 +317,7 @@ export const gameSpecSchema = z.object({
   summary: z.string(),
   players: z.object({ min: z.number().int(), max: z.number().int() }),
   estimatedMinutes: z.number(),
+  mechanics: mechanicsSchema,
   entityTypes: z.array(entityTypeDefSchema),
   resources: z.array(resourceDefSchema),
   zones: z.array(zoneDefSchema),

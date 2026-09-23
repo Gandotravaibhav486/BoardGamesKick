@@ -1,25 +1,33 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { LogEntry } from "@/components/renderer/describe-event";
+import { cn } from "@/lib/cn";
 
-export function GameLog({ lines }: { lines: string[] }) {
+const toneClass: Record<LogEntry["tone"], string> = {
+  positive: "text-warning font-medium",
+  negative: "text-error/80",
+  neutral: "text-ink",
+};
+
+export function GameLog({ entries }: { entries: LogEntry[] }) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [lines.length]);
+  }, [entries.length]);
 
   return (
     <div className="flex h-full flex-col rounded-lg border border-border bg-surface">
       <div className="border-b border-border px-3 py-2 text-xs font-semibold text-ink-muted">Game log</div>
-      <div className="flex-1 overflow-y-auto px-3 py-2 text-xs text-ink">
-        {lines.length === 0 ? (
+      <div className="flex-1 overflow-y-auto px-3 py-2 text-xs">
+        {entries.length === 0 ? (
           <p className="text-ink-muted">No moves yet.</p>
         ) : (
           <ul className="space-y-1">
-            {lines.map((line, idx) => (
-              <li key={idx} className="leading-snug">
-                {line}
+            {entries.map((entry) => (
+              <li key={entry.id} className={cn("leading-snug", toneClass[entry.tone])}>
+                {entry.text}
               </li>
             ))}
           </ul>

@@ -70,8 +70,17 @@ export async function createGame(
 
   if (result.status !== "ok" || !result.spec || !result.presentation) {
     return {
-      errors: { form: "The compiler could not produce a playable spec. Try adjusting your rules text." },
+      errors: {
+        form:
+          "We couldn't compile this yet. Review the details below, adjust your description, and try again.",
+      },
       values,
+      compile: {
+        status: result.status === "ok" ? "failed" : result.status,
+        unsupportedRules: result.unsupportedRules,
+        issues: result.issues,
+        coverage: result.coverage,
+      },
     };
   }
 
@@ -93,6 +102,15 @@ export async function createGame(
         notes: "Generated from rules text",
         spec: result.spec,
         presentation: result.presentation,
+        compileReport: {
+          status: result.status,
+          unsupportedRules: result.unsupportedRules,
+          issues: result.issues,
+          coverage: result.coverage,
+          model: result.model,
+          durationMs: result.durationMs,
+          designSummary: result.designSummary,
+        },
       },
     ],
     isShowcase: false,

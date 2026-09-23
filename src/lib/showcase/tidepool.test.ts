@@ -8,7 +8,7 @@ describe("tidepoolSpec", () => {
   });
 
   it("uses only known tile types in every cellPattern cell", () => {
-    const reef = tidepoolSpec.zones.find((z) => z.id === "reef");
+    const reef = tidepoolSpec.zones.find((z) => z.role === "mosaic");
     expect(reef?.cellPattern).toBeDefined();
     const knownTypes = new Set<string>(TILE_TYPES);
     for (const row of reef!.cellPattern!) {
@@ -19,7 +19,7 @@ describe("tidepoolSpec", () => {
   });
 
   it("has each cellPattern row be a permutation of TILE_TYPES", () => {
-    const reef = tidepoolSpec.zones.find((z) => z.id === "reef");
+    const reef = tidepoolSpec.zones.find((z) => z.role === "mosaic");
     const sortedTileTypes = [...TILE_TYPES].sort();
     for (const row of reef!.cellPattern!) {
       expect([...row].sort()).toEqual(sortedTileTypes);

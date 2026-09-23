@@ -287,6 +287,31 @@ Never silently approximate unsupported rules.
 
 ---
 
+# 17b. MECHANICS ARCHETYPES (MVP decision, Phase 1)
+
+The generic condition/effect vocabulary above is the long-term target, but
+the MVP engine does not interpret it yet. Instead every Game Spec carries a
+`mechanics` block naming an engine **archetype** plus its parameters:
+
+```
+mechanics: { archetype: "tile-drafting", params: { poolCount, poolCapacity,
+  tilesPerType, rowCapacities, spillPenalties, scoring, endCondition,
+  startingMarker } }
+```
+
+Zones carry a functional `role` (supply, pool, overflow, discard,
+collection-row, mosaic, penalty) so the engine locates them without relying
+on ids or names. The compiler never writes zones/actions/effects directly: the
+LLM produces a compact `TileDraftingDesign`, and `buildTileDraftingGame()`
+expands it deterministically into a full spec that is then validated.
+
+Anything the archetype cannot express must surface as `unsupportedRules`.
+New mechanics are added by adding archetypes (and eventually by making the
+engine interpret the generic effect vocabulary), not by letting the LLM
+generate code.
+
+---
+
 # 18. FUTURE EXTENSIBILITY
 
 Potential future additions:

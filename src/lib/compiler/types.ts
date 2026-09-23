@@ -29,6 +29,22 @@ export interface CompileResult {
   issues: CompilerIssue[];
   /** Which sections of the rules text were represented, for the coverage report */
   coverage: { covered: string[]; uncovered: string[] };
+  /** Model id that produced this result, absent for the mock compiler */
+  model?: string;
+  durationMs?: number;
+  /** One-line human summary of the design the compiler produced */
+  designSummary?: string;
+}
+
+/** Serializable subset of CompileResult persisted alongside a GameVersion */
+export interface CompileReport {
+  status: CompileResult["status"];
+  unsupportedRules: UnsupportedRule[];
+  issues: CompilerIssue[];
+  coverage: { covered: string[]; uncovered: string[] };
+  model?: string;
+  durationMs?: number;
+  designSummary?: string;
 }
 
 /**

@@ -98,6 +98,21 @@ engine.getResult()
 
 ---
 
+## 4b. MVP engine scope (Phase 1 decision)
+
+The engine implements one archetype ("tile-drafting"), selected by
+`spec.mechanics.archetype` and driven entirely by `spec.mechanics.params`
+plus zone `role`s. It is pure and deterministic: all randomness flows through
+`state.rngState`, and `applyAction` re-derives legality from
+`getLegalActions` before mutating anything. `LegalAction` is a concrete,
+fully-specified move the client echoes back as an `ActionIntent`.
+
+Phase 1 runs the engine in the browser (single-player vs. seeded bots); the
+server-authoritative loop in §5 is unchanged as the target and is NOT yet
+implemented.
+
+---
+
 # 5. SERVER AUTHORITY
 
 Clients do not directly mutate authoritative game state.

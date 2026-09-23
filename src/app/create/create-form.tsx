@@ -1,16 +1,86 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { createGame } from "@/app/create/actions";
-import { initialCreateGameState } from "@/app/create/form-state";
+import { initialCreateGameState, type CreateGameCompileFailure } from "@/app/create/form-state";
 
 const PLAYER_COUNTS = Array.from({ length: 8 }, (_, i) => i + 1);
 
 const RULES_PLACEHOLDER = `Example: Each round, players draft cards from a shared row of five. On your turn, take one card and add it to your tableau. Cards score points based on sets you complete. The game ends after eight rounds, and whoever has the most points wins.`;
+
+const PROGRESS_STAGES: { atMs: number; label: string }[] = [
+  { atMs: 0, label: "Reading your rules…" },
+  { atMs: 3_000, label: "Mapping mechanics onto the engine…" },
+  { atMs: 10_000, label: "Validating the game spec…" },
+  { atMs: 25_000, label: "Still working — larger rule sets take longer…" },
+];
+
+function CompileProgress() {
+  const [stageIndex, setStageIndex] = useState(0);
+
+  useEffect(() => {
+    setStageIndex(0);
+    const timers = PROGRESS_STAGES.slice(1).map((stage, i) =>
+      setTimeout(() => setStageIndex(i + 1), stage.atMs),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <Card className="border-primary/30 bg-primary/5 p-4">
+      <div className="flex items-center gap-3">
+        <Loader2 className="size-5 shrink-0 animate-spin text-primary" aria-hidden />
+        <p className="text-sm font-medium text-ink" role="status" aria-live="polite">
+          {PROGRESS_STAGES[stageIndex].label}
+        </p>
+      </div>
+    </Card>
+  );
+}
+
+function CompileFailurePanel({ compile }: { compile: CreateGameCompileFailure }) {
+  return (
+    <Card className="border-error/30 bg-error/5 p-4">
+      <h3 className="text-sm font-semibold text-ink">We couldn&apos;t compile this yet</h3>
+      <p className="mt-1 text-sm text-ink-muted">
+        Edit your description below to address the notes below, then try again.
+      </p>
+      {compile.unsupportedRules.length > 0 ? (
+        <div className="mt-3">
+          <p className="text-sm font-medium text-ink">Unsupported rules</p>
+          <ul className="mt-1 list-inside list-disc space-y-2 text-sm text-ink-muted">
+            {compile.unsupportedRules.map((rule, i) => (
+              <li key={i}>
+                <span className="font-medium text-ink">{rule.rule}</span> — {rule.reason}
+                <br />
+                <span className="text-xs">Suggestion: {rule.suggestedClarification}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {compile.issues.length > 0 ? (
+        <div className="mt-3">
+          <p className="text-sm font-medium text-ink">Issues</p>
+          <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-ink-muted">
+            {compile.issues.map((issue, i) => (
+              <li key={i}>{issue.message}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {compile.coverage.uncovered.length > 0 ? (
+        <p className="mt-3 text-xs text-ink-muted">
+          {compile.coverage.uncovered.length} sentence(s) from your description were not represented.
+        </p>
+      ) : null}
+    </Card>
+  );
+}
 
 export function CreateForm() {
   const [state, formAction, isPending] = useActionState(createGame, initialCreateGameState);
@@ -19,12 +89,17 @@ export function CreateForm() {
   return (
     <Card className="p-5 sm:p-7">
       <form action={formAction} className="flex flex-col gap-6" noValidate>
-        {state.errors.form ? (
+        {isPending ? <CompileProgress /> : null}
+
+        {!isPending && state.errors.form ? (
           <p role="alert" className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">
             {state.errors.form}
           </p>
         ) : null}
 
+        {!isPending && state.compile ? <CompileFailurePanel compile={state.compile} /> : null}
+
+        <fieldset disabled={isPending} className="flex flex-col gap-6">
         <Field label="Title" htmlFor="title">
           <Input
             id="title"
@@ -148,6 +223,7 @@ export function CreateForm() {
             </p>
           ) : null}
         </Field>
+        </fieldset>
 
         <div>
           <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto">

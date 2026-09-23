@@ -3,7 +3,10 @@ import type {
   CompileResult,
   RulesCompiler,
 } from "@/lib/compiler/types";
-import { tidepoolPresentation, tidepoolSpec } from "@/lib/showcase/tidepool";
+import { anthropicCompiler } from "@/lib/compiler/anthropic-compiler";
+import { buildTileDraftingGame } from "@/lib/game-spec/tile-drafting";
+import { tidepoolDesign } from "@/lib/showcase/tidepool";
+import { slugify } from "@/lib/store";
 
 function splitSentences(text: string): string[] {
   return text
@@ -22,24 +25,21 @@ function delay(ms: number): Promise<void> {
  * title/pitch/players/time. This is intentionally obvious in the UI: the
  * `issues` array always contains a warning explaining the limitation, and
  * `coverage.covered` is always empty because none of the designer's own
- * sentences were actually compiled.
+ * sentences were actually compiled. Kept as a fallback for local dev / tests
+ * via `COMPILER=mock`.
  */
 export const mockCompiler: RulesCompiler = {
   async compile(input: CompileInput): Promise<CompileResult> {
     await delay(600);
 
-    const spec = {
-      ...tidepoolSpec,
-      name: input.title || tidepoolSpec.name,
-      summary: input.pitch || tidepoolSpec.summary,
+    const { spec, presentation } = buildTileDraftingGame({
+      ...tidepoolDesign,
+      id: slugify(input.title || tidepoolDesign.name),
+      name: input.title || tidepoolDesign.name,
+      summary: input.pitch || tidepoolDesign.summary,
       players: { ...input.players },
       estimatedMinutes: input.estimatedMinutes,
-    };
-
-    const presentation = {
-      ...tidepoolPresentation,
-      gameSpecId: spec.id,
-    };
+    });
 
     return {
       status: "ok",
@@ -50,7 +50,7 @@ export const mockCompiler: RulesCompiler = {
         {
           severity: "warning",
           message:
-            "Prototype compiler: this build uses the Tidepool showcase ruleset. Real AI compilation arrives in Phase 1.",
+            "Prototype compiler: this build uses the Tidepool showcase ruleset. Set COMPILER to anything other than \"mock\" to use the real AI compiler.",
         },
       ],
       coverage: {
@@ -62,5 +62,6 @@ export const mockCompiler: RulesCompiler = {
 };
 
 export function getCompiler(): RulesCompiler {
-  return mockCompiler;
+  if (process.env.COMPILER === "mock") return mockCompiler;
+  return anthropicCompiler;
 }
