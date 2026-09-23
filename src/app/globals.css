@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+:root {
+  /* App shell — warm, editorial, "board game café" */
+  --bg: #f7f3ec;
+  --surface: #fffdf9;
+  --surface-2: #efe9df;
+  --ink: #1d1a17;
+  --ink-muted: #6b645c;
+  --border: #e2dbcf;
+  --primary: #c2410c;
+  --primary-hover: #9a3412;
+  --primary-fg: #fff7ed;
+  --accent: #0f766e;
+  --accent-fg: #ecfdf5;
+  --success: #15803d;
+  --warning: #b45309;
+  --error: #b91c1c;
+
+  /* Tabletop — deep felt */
+  --felt: #17302a;
+  --felt-2: #1f3d35;
+  --felt-line: #2c5147;
+  --board: #f1e7d6;
+  --board-ink: #2b2420;
+  --board-line: #d5c6ab;
+  --highlight: #fbbf24;
+
+  /* Tile palette (original, not Azul's) */
+  --tile-ember: #d9532b;
+  --tile-tide: #2a7fb8;
+  --tile-moss: #4f8a3a;
+  --tile-dusk: #6d4bb5;
+  --tile-sand: #e0b64a;
+
+  --radius: 12px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 2px rgb(29 26 23 / 0.06), 0 1px 3px rgb(29 26 23 / 0.08);
+  --shadow-md: 0 4px 12px rgb(29 26 23 / 0.10), 0 1px 3px rgb(29 26 23 / 0.06);
+  --shadow-lg: 0 16px 40px rgb(29 26 23 / 0.16);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+
+  --color-felt: var(--felt);
+  --color-felt-2: var(--felt-2);
+  --color-felt-line: var(--felt-line);
+  --color-board: var(--board);
+  --color-board-ink: var(--board-ink);
+  --color-board-line: var(--board-line);
+  --color-highlight: var(--highlight);
+
+  --color-tile-ember: var(--tile-ember);
+  --color-tile-tide: var(--tile-tide);
+  --color-tile-moss: var(--tile-moss);
+  --color-tile-dusk: var(--tile-dusk);
+  --color-tile-sand: var(--tile-sand);
+
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

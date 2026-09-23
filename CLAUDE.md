@@ -2,9 +2,33 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Commands
+
+```bash
+pnpm install          # install deps (pnpm 12, Node 24)
+pnpm dev              # Next.js dev server on http://localhost:3000
+pnpm build            # production build — must pass before a phase is "done"
+pnpm typecheck        # tsc --noEmit
+pnpm lint             # eslint
+pnpm test             # vitest run (all tests)
+pnpm exec vitest run src/lib/game-spec/validate.test.ts   # single test file
+scripts/screenshot.sh /play/tidepool shots/play.png 390x844   # headless Chrome screenshot (dev server must be running)
+```
+
 ## Current State
 
-This repository currently contains **only planning documentation** — no application code exists yet. Per `docs/BUILD_STATUS.md`, Phase 0 (existing codebase inspection) has not started, and none of the suggested `apps/`/`packages/` directories have been created. There is no `package.json`, build tooling, or test suite yet. Before writing code, check `docs/BUILD_STATUS.md` for the current phase status.
+Check `docs/BUILD_STATUS.md` for the current phase and what is REAL vs MOCKED vs NOT IMPLEMENTED. Phase 0 (visual foundation) is a single Next.js 16 app at the repo root (App Router, React 19, Tailwind v4, TypeScript). The monorepo `apps/`/`packages/` layout from `docs/ARCHITECTURE.md` was deferred; the same boundaries live as folders under `src/lib/` so they can be extracted later.
+
+## Code Layout (the boundaries that matter)
+
+- `src/lib/game-spec/` — Game Spec TS types (`types.ts`, source of truth), zod schema, `validateGameSpec()` (schema + semantic checks). Presentation-free.
+- `src/lib/presentation/` — Presentation Spec types. Pure data.
+- `src/lib/compiler/` — `RulesCompiler` boundary. `mock-compiler.ts` returns the showcase ruleset and honestly reports zero coverage; the real LLM compiler slots in here.
+- `src/lib/engine/` — `GameEngine` interface (Phase 1 target). `demo-runtime.ts` is a client-side, heuristic demo used only to make the Phase 0 tabletop interactive — it is NOT the engine and must be replaced, not extended.
+- `src/lib/showcase/tidepool.ts` — the original showcase game (tile drafting). Must run through generic code paths only.
+- `src/lib/store.ts` — in-memory game store (MOCKED persistence; resets on restart).
+- `src/components/renderer/` — generic tabletop renderer driven by spec + presentation + state. No game-specific components allowed here.
+- `src/components/ui/` — app-shell primitives (Button, Input, Card, SiteNav). Design tokens live in `src/app/globals.css` and are exposed as Tailwind colors (`bg-primary`, `bg-felt`, `bg-tile-ember`, ...).
 
 ## Project Vision
 
@@ -92,3 +116,13 @@ Per `docs/PRD.md` §12, do not prioritize: production payment settlement, full K
 A phase is not "done" when code compiles — per `docs/FABLE-INSTRUCTIONS.md` §15, a phase is complete only when implementation exists, tests pass, integration works, UX has been checked in-browser, known failures are documented, and `docs/BUILD_STATUS.md` is updated. Minimum manual UI verification targets: desktop 1440×900 and mobile 390×844 (see `docs/PRESENTATION_SPEC.md` §17).
 
 Do not fake game results, player counts, community activity, pledges, reviews, or playtest statistics anywhere in the product, including during MVP development.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -301,3 +301,25 @@ Potential future additions:
 - Advanced simulations
 
 Do not implement these unless required by the current vertical slice.
+## EXTENSIBILITY
+
+The MVP implements only a constrained subset of the eventual Game Spec.
+
+The schema and engine must be designed so future mechanics can be added without replacing the core architecture.
+
+The MVP is intentionally NOT a complete board-game language.
+
+Future extensions may include:
+
+- simultaneous actions
+- drafting
+- hand passing
+- triggered effects
+- conditional effects
+- complex dependencies
+- production chains
+- trading
+- multi-stage phases
+- advanced scoring
+- player relationships
+- custom resolution sequences
