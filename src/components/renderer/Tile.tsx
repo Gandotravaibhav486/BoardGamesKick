@@ -10,6 +10,16 @@ const sizeClasses = {
   lg: "h-14 w-14 text-sm",
 };
 
+function isLightHex(color: string) {
+  const m = /^#([0-9a-f]{6})$/i.exec(color.trim());
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.72;
+}
+
 export interface TileProps {
   typeId: string;
   style?: EntityStyle;
@@ -34,6 +44,7 @@ export function Tile({
   const label = style?.label ?? typeId;
   const color = style?.color ?? "var(--tile-ember)";
   const interactive = typeof onClick === "function";
+  const iconClass = isLightHex(color) ? "text-ink/80" : "text-white/90";
 
   const content = (
     <span
@@ -53,7 +64,7 @@ export function Tile({
       {!ghost && (
         <Icon
           name={style?.icon}
-          className="h-1/2 w-1/2 text-white/90 drop-shadow-sm"
+          className={cn("h-1/2 w-1/2 drop-shadow-sm", iconClass)}
           strokeWidth={2.25}
         />
       )}

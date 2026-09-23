@@ -23,7 +23,6 @@ function CompileProgress() {
   const [stageIndex, setStageIndex] = useState(0);
 
   useEffect(() => {
-    setStageIndex(0);
     const timers = PROGRESS_STAGES.slice(1).map((stage, i) =>
       setTimeout(() => setStageIndex(i + 1), stage.atMs),
     );

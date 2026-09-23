@@ -44,7 +44,6 @@ console.log("legal destinations:", await legal.count());
 await legal.first().click();
 await p.locator("button:visible", { hasText: /^Confirm$/ }).first().click();
 await p.waitForTimeout(3000);
-const logText = await p.locator("text=/Game log/i").first().locator("..").textContent().catch(() => "");
 console.log("log has content:", !(await p.textContent("body")).includes("No moves yet"));
 await p.screenshot({ path: "screenshots/play-ai-game-after-move-desktop.png" });
 console.log("errors:", errors);

@@ -5,7 +5,7 @@ Last updated:
 
 ## Overall Status
 
-STATUS: PHASE 0 COMPLETE (visual foundation). Phase 1 NOT STARTED.
+STATUS: PHASE 1 COMPLETE (AI → playable game). Phase 2 NOT STARTED.
 
 Legend: **REAL** = implemented and verified · **MOCKED** = present but simulated, clearly labeled in-product · **NOT IMPLEMENTED** = absent
 
@@ -13,180 +13,81 @@ Legend: **REAL** = implemented and verified · **MOCKED** = present but simulate
 
 # Phase 0 — Visual Foundation
 
-Status: COMPLETE (see Known Issues)
+Status: COMPLETE (commit `8a95cca`)
 
-### Stack decisions
-
-- Single Next.js 16 app at repo root (App Router, React 19, Tailwind v4, TypeScript, pnpm). The `apps/`/`packages/` monorepo from ARCHITECTURE.md is deferred; the same boundaries exist as folders under `src/lib/` (`game-spec`, `presentation`, `compiler`, `engine`, `showcase`) and `src/components/renderer`, so extraction later is mechanical.
-- Persistence is an in-memory `Map` (`src/lib/store.ts`). MOCKED — resets on server restart.
-- No auth. Every created game is attributed to designer "You".
-
-### Completed
-
-- [x] Design tokens (`src/app/globals.css`) + UI primitives (Button, Input/Textarea/Select/Field, Card, Badge, SiteNav/Footer) — REAL
-- [x] Landing page `/` — hero, how-it-works, Play-Before-You-Back band, trust section, CTAs — REAL (no fabricated stats)
-- [x] Create Game `/create` — validated form (zod, server action), loading state, field errors, pipeline sidebar with honest prototype note — REAL
-- [x] Rules compiler boundary (`RulesCompiler`, `CompileInput`, `CompileResult`, `UnsupportedRule`) — REAL interface
-- [x] Rules compiler implementation — **MOCKED** (`mock-compiler.ts`): returns the Tidepool showcase ruleset re-titled from the form; reports every submitted rule sentence as *not yet represented*; emits a visible "Prototype compiler" warning. No LLM call is made.
-- [x] Game detail `/games/[id]` — hero, status, compiler report (notes / unsupported rules / coverage), how-to-play, rule-spec summary derived from the spec, versions list, Play-Before-You-Back panel, Publish (draft → published) — REAL
-- [x] Community `/community` — featured showcase, published-games grid, `?q=` search, real empty states, drafts section — REAL
-- [x] Game Spec TypeScript types (`src/lib/game-spec/types.ts`) — REAL
-- [x] Game Spec zod schema + `validateGameSpec()` with schema and semantic checks (unique ids, zone/entity/action reference integrity, phase reachability, cellPattern vs grid dimensions, player bounds) — REAL, tested
-- [x] Presentation Spec types — REAL
-- [x] `GameEngine` interface (`src/lib/engine/types.ts`) — REAL interface, NO implementation
-- [x] Original showcase game "Tidepool" spec + presentation (`src/lib/showcase/tidepool.ts`) — REAL data, validates clean with zero warnings
-- [x] Generic tabletop renderer `/play/[id]` (`src/components/renderer/*`) — see Phase 0 tabletop notes below
-- [x] Tests: vitest, 10 passing (`pnpm test`)
-- [x] Screenshot tooling: `node scripts/shots.mjs` (Playwright-core + installed Chrome; reports horizontal overflow)
-
-### Tabletop (`/play/[gameId]`)
-
-- Renderer is data-driven from Game Spec + Presentation Spec + Game State: zones render by geometry (row / grid / stack), tiles take color + icon from `entityStyles`, layout from `zonePlacements`. No game-specific components. — REAL
-- Interaction is SELECT → ACTION → CONFIRM with legal-destination highlighting, game log, turn indicator, score chips, mobile tab navigation (My Area / Table / Opponents / Log). — REAL UI
-- Game logic behind the tabletop is **MOCKED**: `src/lib/engine/demo-runtime.ts` is a client-side heuristic that builds initial state from `spec.setup` and moves tiles between zones so the board feels alive. It does not evaluate spec conditions/effects, does not score, does not end the game, and is not server-authoritative. It must be replaced by the Phase 1 engine, not extended.
-- Opponents are advanced via a "Simulate opponent turn" button using a seeded PRNG. — MOCKED (labeled)
-
-### Verification
-
-- [x] `pnpm typecheck` clean
-- [x] `pnpm test` 10/10
-- [x] `pnpm build` passes (Next 16.3.5, Turbopack; 6 routes)
-- [x] `pnpm lint` clean
-- [x] Landing → Create → Generate → Detail (`?compiled=1`) → Publish → Community shows game: exercised in a real browser (Playwright-core), zero console errors
-- [x] Screenshots reviewed at 1440×900 and 390×844 for `/`, `/create`, `/community`, `/games/tidepool`, `/play/tidepool`; no horizontal overflow at 390px
-- [x] Desktop tabletop interaction (select → highlight → confirm → simulate opponent → log) exercised in a real browser
-- [ ] Mobile tabletop interaction — NOT VERIFIED (deliberately deprioritized: MVP demo is desktop-first). Tiles are selectable on mobile; the select → destination → confirm path was not confirmed working.
-- [ ] Accessibility audit (axe) — NOT DONE; semantic headings, labels, focus rings and aria on tabs/errors are in place, but not audited
-- [ ] Visual regression — NOT IMPLEMENTED
-- [ ] Performance benchmark — NOT IMPLEMENTED
-
-### Known Issues
-
-- The compiler report on the detail page is recomputed from stored inputs on `?compiled=1` rather than persisted, because `GameVersion` has no field for compile output. Safe only while the compiler is deterministic; add a persisted compile report in Phase 1/2.
-- `spec.actions[*].effects` in the Tidepool spec use placeholder zone refs (`pool-1`, `row-1`) because the Effect vocabulary cannot yet express "the pool the player selected" / "the row the player selected". Phase 1 must add parameter binding (selected zone/entity) to `ZoneRef`/`Effect` before an engine can execute these actions.
-- Mobile tabletop interaction unverified (see Verification). Desktop is the demo target.
-- In dev mode the Next.js devtools badge overlaps the mobile "My Area" tab; absent in production builds.
-- Next.js appended an auto-generated `<!-- BEGIN:nextjs-agent-rules -->` block to `CLAUDE.md`; harmless, left in place.
+Single Next.js 16 app at repo root (App Router, React 19, Tailwind v4, TypeScript, pnpm). Design tokens + UI primitives, landing page, create form, community page, game detail page, generic tabletop renderer, Game Spec types + zod schema + semantic validation, original showcase game "Tidepool". See git history for details. Persistence is an in-memory `Map` (`src/lib/store.ts`) — MOCKED, resets on server restart. No auth; created games are attributed to "You".
 
 ---
 
-# Phase 1 — Game Engine + Foundation
+# Phase 1 — AI → Playable Game
 
-Status: NOT STARTED
+Status: COMPLETE (desktop demo target)
 
-### Completed
+### Architecture decision
 
-- [x] Game Spec schema (done in Phase 0)
-- [ ] Deterministic engine
-- [ ] Player state
-- [ ] Cards/decks
-- [ ] Tokens
-- [ ] Resources
-- [ ] Turns
-- [ ] Actions
-- [ ] Scoring
-- [ ] Win conditions
-- [x] Seeded randomness (mulberry32 PRNG exists in demo-runtime; move into engine)
-- [ ] Hidden information (server-side redaction — `viewFor` is on the interface only)
-- [ ] Engine tests
-- [x] Showcase game spec (Tidepool) — needs engine to actually run
+The generic condition/effect vocabulary in GAME_SPEC.md is retained as the long-term target but is NOT interpreted by the engine yet. Instead every spec carries `mechanics: { archetype: "tile-drafting", params }` and zones carry a functional `role`. The LLM produces a compact `TileDraftingDesign`; `buildTileDraftingGame()` (`src/lib/game-spec/tile-drafting.ts`) expands it deterministically into a full spec + presentation, which is then schema- and semantically-validated. The LLM never writes zones, actions, effects or code. Anything outside the archetype is reported as an unsupported rule.
+
+### Completed — REAL
+
+- [x] **AI rules compiler** (`src/lib/compiler/anthropic-compiler.ts`): `@anthropic-ai/sdk`, `client.messages.parse` with `zodOutputFormat` structured output, model `claude-opus-5`, effort medium, 120s timeout. Pipeline: LLM → normalize design → build spec → `validateGameSpec` → one retry with validation errors fed back → ok/failed. Typed SDK errors become a `failed` CompileResult with a human-readable issue. Credentials via the Anthropic SDK's default resolution (`ant auth login` profile or `ANTHROPIC_API_KEY`); none hardcoded.
+- [x] Compiler honesty: `unsupportedRules` (rule / reason / suggested clarification), `ambiguities` (with clarification questions), sentence-level `coverage`, `fit: "unsupported"` when the description is not a tile-drafting game. Compile report persisted on `GameVersion.compileReport` and rendered on the detail page ("Compiled by claude-opus-5 in 23.8s").
+- [x] **Deterministic engine** (`src/lib/engine/tile-drafting-engine.ts`): pure functions, all randomness via `state.rngState` (mulberry32). `initialize` runs `spec.setup`; `getLegalActions` returns concrete moves; `applyAction` re-validates then moves tiles (right-aligned rows, overflow → penalty → discard, starting marker), auto-resolves the build phase (mosaic placement, adjacency or flat scoring, penalties floored at 0), refills pools (reshuffling discard into supply when exhausted), advances rounds, applies end bonuses (rows / columns / sets), determines winners with tiebreak; `getResult`; `viewFor` redacts private zones. `chooseBotAction` = deterministic simple bot.
+- [x] **Tabletop wired to the engine** (`src/components/renderer/Tabletop.tsx`): SELECT → ACTION → CONFIRM using engine legal actions; illegal rows dimmed with reasons; opponents auto-play via the seeded bot (900ms); events → game log with score highlighting; round-end banner; game-over overlay with sorted scores, winner, "Play again". `demo-runtime.ts` deleted.
+- [x] **Create → Generate flow**: staged progress panel during the real compile; failure panel lists unsupported rules / issues / uncovered sentences with values preserved for retry; success redirects to the detail page with the persisted report; "Play now" opens the generated game in the same generic renderer.
+- [x] Tidepool rebuilt from a `TileDraftingDesign` via the builder (same theme, names, scoring); validates with zero warnings.
+- [x] Tile icons switch to dark ink on light tile colors (LLM-chosen palettes).
 
 ### Verification
 
-- [ ] Unit tests
-- [ ] Determinism tests
-- [ ] Legal action tests
-- [ ] Illegal action tests
-- [ ] Headless game execution
+- [x] `pnpm typecheck` 0 errors · `pnpm lint` clean · `pnpm test` 42 passed, 1 skipped (live LLM test gated on `LIVE_LLM=1`) · `pnpm build` passes
+- [x] Engine tests (28): entity conservation across a full game, determinism (same seed → deep-equal; same action sequence → deep-equal), legal/illegal actions, right-aligned placement, overflow → penalty, starting marker, adjacency scoring cases (1 / 2 / L-shape 4), flat scoring, penalty floor, round progression + refill from discard, full 3-player bot game to `finished`, "rounds" end condition
+- [x] Compiler tests (4, no network): ok path, unsupported fit, retry-then-succeed on validation failure, SDK error → failed result. Live test: Tidepool rules → status ok, 5 tile types, 12/12 sentences covered, ~23s
+- [x] Browser (Playwright, 1440×900): `/play/tidepool` — select → 6 legal destinations → confirm → bots auto-play → round-end banner → full game to "Game over" (final 31 / 29 / 0, completed-row bonus logged)
+- [x] Browser end-to-end with the REAL compiler (`node scripts/e2e-create-play.mjs`): new description "Harbor Lights" (7 docks, 5 lantern colours, harbourmaster token, bilge penalties, lighthouse mosaic, plus a trading rule) → compiled in 24.6s by claude-opus-5 → detail page shows 3 ambiguities and 1 unsupported rule (trading) → Play now → 29 tiles rendered with the LLM's theme → move applied, bots played, zero console errors
+- [ ] Mobile tabletop — NOT VERIFIED (deliberately out of scope; desktop demo)
+- [ ] Accessibility audit — NOT DONE
+- [ ] Compiler evaluation across 10+ varied descriptions — NOT DONE (2 live runs: Tidepool, Harbor Lights; both ok)
 
-### Known Issues
+### Known limitations
 
-- Effect/ZoneRef vocabulary needs selection parameters (see Phase 0 Known Issues).
+- **Single archetype.** Only tile-drafting games compile and run. Descriptions outside it return an honest `failed` result with guidance; they do not become playable.
+- **Client-side engine.** The engine runs in the browser (single human vs. two seeded bots). Server-authoritative play, hidden-information redaction over the wire, and multiplayer are NOT IMPLEMENTED (`viewFor` exists but is unused).
+- **Generic effects not executed.** `spec.actions[*].effects`, `preconditions` and `endsWhen` are validated data only; the engine executes `mechanics.params`.
+- **Compile latency** 20–30s per generation (claude-opus-5, medium effort). Progress UI is timer-based, not streamed.
+- `needs-clarification` status is defined but never produced; ambiguities are folded into `ok` results as issues so the game stays playable.
+- No `server-only` guard on `anthropic-compiler.ts` (package not installed); it is only imported from server actions / RSC today.
+- In-memory store — created games vanish on server restart.
 
 ---
 
 # Phase 2 — AI Game Builder
 
-Status: NOT STARTED
+Status: PARTIALLY COVERED BY PHASE 1
 
-### Completed
-
-- [x] Create Game flow (UI done in Phase 0)
-- [x] Natural-language rules input
-- [ ] Rules compiler (LLM → Game Spec) — currently MOCKED
-- [x] Game Spec validation
-- [ ] Ambiguity detection
-- [ ] Unsupported rule detection (report UI exists; always empty from mock)
-- [ ] Clarification flow
-- [~] Coverage report (UI exists; mock reports 0% coverage honestly)
-- [~] Create → Compile → Play flow (works end-to-end against the mock)
-
-### Verification
-
-- [ ] Compiler tests
-- [ ] 10-case compiler evaluation
-- [ ] End-to-end creation test
+- [x] Create Game flow, natural-language input, rules compiler (REAL), spec validation, unsupported-rule detection, ambiguity detection (reported, not interactively resolved), coverage report, Create → Compile → Play
+- [ ] Clarification flow (answer questions → recompile) — NOT IMPLEMENTED
+- [ ] 10-case compiler evaluation — NOT DONE
+- [ ] Multiple archetypes — NOT IMPLEMENTED
 
 ---
 
 # Phase 3 — Playable Tabletop
 
-Status: NOT STARTED (visual foundation exists from Phase 0)
+Status: DESKTOP COMPLETE FOR THE ARCHETYPE
 
-### Completed
-
-- [x] Generic renderer (visual; needs engine wiring)
-- [x] Presentation Spec (types + showcase instance)
-- [ ] Cards
-- [ ] Hands
-- [ ] Decks (stack zones render as counts only)
-- [x] Tokens/tiles
-- [ ] Resources (types exist; not rendered)
-- [x] Player areas
-- [x] Table
-- [x] Action bar
-- [x] Turn indicator
-- [x] Game log
-- [x] Legal move highlighting (driven by demo heuristic, not engine)
-- [x] Mobile layout (tabbed)
-- [ ] Accessibility audit
-
-### Verification
-
-- [x] Desktop 1440x900 (screenshot review)
-- [x] Mobile 390x844 (screenshot review)
-- [ ] Accessibility
-- [ ] Visual regression
-- [ ] Performance benchmark
+- [x] Generic renderer, presentation spec, tiles/tokens, player areas, table, action bar, turn indicator, game log, legal-move highlighting (engine-driven), scores, game end
+- [ ] Cards / hands / decks / resources rendering — types exist, NOT rendered (not needed by the archetype)
+- [ ] Mobile QA, accessibility audit, visual regression, performance benchmark — NOT DONE
 
 ---
 
 # Phase 4 — Community + Playtesting
 
-Status: NOT STARTED (discovery + publish UI exists from Phase 0)
-
-### Completed
-
-- [x] Community page
-- [x] Search
-- [ ] Filters
-- [x] Game cards
-- [x] Game detail page
-- [x] Publish flow (in-memory)
-- [ ] Playtest flow
-- [ ] Feedback
-- [ ] Designer dashboard
-- [~] Version history (list renders; only v1 ever exists — no re-compile creates v2 yet)
-
----
+Status: NOT STARTED (publish/discover/search/detail exist from Phase 0; no feedback, dashboard, or re-versioning)
 
 # Phase 5 — Crowdfunding
 
-Status: NOT STARTED
-
-- Detail page shows a disabled "Campaign coming in a later phase" affordance and explains Play-Before-You-Back. No campaign entities, pledges, rewards or payment abstraction exist. NOT IMPLEMENTED.
-
----
+Status: NOT STARTED (detail page shows a disabled "Campaign coming in a later phase" affordance; no campaign entities or payment abstraction)
 
 # Phase 6 — Final QA
 
@@ -196,11 +97,9 @@ Status: NOT STARTED
 
 # FINAL ACCEPTANCE
 
-The product is NOT considered complete until the following journey works:
-
 LANDING → CREATE → COMPILE → PLAY → PUBLISH → COMMUNITY → DISCOVER → PLAY → FEEDBACK → DASHBOARD → CROWDFUND → PLAY BEFORE BACKING
 
-Current reach: LANDING → CREATE → COMPILE (mock) → PLAY (visual demo, no rules) → PUBLISH → COMMUNITY → DISCOVER → PLAY. FEEDBACK, DASHBOARD, CROWDFUND, PLAY-BEFORE-BACKING (as a campaign flow) are NOT IMPLEMENTED.
+Current reach (all REAL except where noted): LANDING → CREATE → COMPILE (real AI) → PLAY (real engine, client-side) → PUBLISH → COMMUNITY → DISCOVER → PLAY. FEEDBACK, DASHBOARD, CROWDFUND, PLAY-BEFORE-BACKING as a campaign flow: NOT IMPLEMENTED.
 
 Final status:
 

@@ -19,7 +19,7 @@ describe.skipIf(!runLive)("anthropicCompiler (live)", () => {
         rulesText: tidepool.rulesText,
       });
 
-      // eslint-disable-next-line no-console
+       
       console.log(JSON.stringify({ status: result.status, designSummary: result.designSummary, unsupportedRules: result.unsupportedRules, coverage: result.coverage, durationMs: result.durationMs }, null, 2));
 
       expect(result.status).toBe("ok");
